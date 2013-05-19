@@ -42,7 +42,7 @@ function polyLongDivideSelf( v, d ){
     for( i = n-1; i >= 0; i-- ){
         dh = d * h;
         t = v[i];
-        v[i] = dh;
+        v[i] = dh / d;
         h= dh + t;
     }
     v.pop();
@@ -261,7 +261,8 @@ function bernsteinToImplicit( v ){
         27*x1*x22*y2*y42-18*x12*x3*y2*y42-9*x12*x2*y3*y42+
         x13*y43;
 
-    return [ A, B, C, D, E, F, G, H, I, J ];
+    var min = Math.min( A, B, C, D, E, F, G, H, I, J );
+    return [ A/min, B/min, C/min, D/min, E/min, F/min, G/min, H/min, I/min, J/min ];
 }
 
 function getIntersectEquation( im, v ){
@@ -515,7 +516,9 @@ function getIntersectEquation( im, v ){
         54*y2*y3*y4+27*y32*y4-3*y1*y42+9*y2*y42-9*y3*y42+
         y43);
 
-        return [ t0, t1, t2, t3, t4, t5, t6, t7, t8, t9 ];
+        var min = 1// Math.min( t0, t1, t2, t3, t4, t5, t6, t7, t8, t9 );
+        return [ t0/min, t1/min, t2/min, t3/min, t4/min,
+                t5/min, t6/min, t7/min, t8/min, t9/min ];
 }
 
 
@@ -559,7 +562,7 @@ function findRoots( _p ){
             dz = fz / evaluateHorner( dp, z );
             // Check if we are done
             if (Math.abs(dz) < EPSILON){
-                if( z >= 0 && z <= 1 && evaluateHorner(_p, z) < TOLERANCE ){
+                if( z >= 0 && z <= 1 && evaluateHorner(_p, z) < 0.01 ){
                     roots.push( z );
                 }
                 break;
@@ -578,6 +581,351 @@ function findRoots( _p ){
     return roots;
 }
 
+
+/**
+*   Adapted From http://www.kevlindev.com/gui/math/intersection/index.htm
+*   copyright 2002-2003, Kevin Lindsey
+*/
+var intersectCurveCurve = function(v1, v2, curve1, curve2, locations) {
+    var ax, bx, cx, dx, ay, by, cy, dy;
+    var c13x, c12x, c11x, c10x, c13y, c12y, c11y, c10y;
+    var c23x, c22x, c21x, c20x, c23y, c22y, c21y, c20y;
+    var a1x = v1[0], a1y = v1[1], a2x = v1[2], a2y = v1[3];
+    var a3x = v1[4], a3y = v1[5], a4x = v1[6], a4y = v1[7];
+    var b1x = v2[0], b1y = v2[1], b2x = v2[2], b2y = v2[3];
+    var b3x = v2[4], b3y = v2[5], b4x = v2[6], b4y = v2[7];
+    // Calculate the coefficients of cubic polynomial
+    ax = a1x*-1; ay = a1y*-1;
+    bx = a2x*3; by = a2y*3;
+    cx = a3x*-3; cy = a3y*-3;
+    c13x = ax+bx+cx+a4x; c13y = ay+by+cy+a4y;
+    ax = a1x*3; ay = a1y*3;
+    bx = a2x*-6; by = a2y*-6;
+    cx = a3x*3; cy = a3y*3;
+    c12x = ax+bx+cx; c12y = ay+by+cy;
+    ax = a1x*-3; ay = a1y*-3;
+    bx = a2x*3; by = a2y*3;
+    c11x = ax+bx; c11y = ay+by;
+    c10x = a1x; c10y = a1y;
+    ax = b1x*-1; ay = b1y*-1;
+    bx = b2x*3; by = b2y*3;
+    cx = b3x*-3; cy = b3y*-3;
+    c23x = ax+bx+cx+b4x; c23y = ay+by+cy+b4y;
+    ax = b1x*3; ay = b1y*3;
+    bx = b2x*-6; by = b2y*-6;
+    cx = b3x*3; cy = b3y*3;
+    c22x = ax+bx+cx; c22y = ay+by+cy;
+    ax = b1x*-3; ay = b1y*-3;
+    bx = b2x*3; by = b2y*3;
+    c21x =  ax + bx; c21y =  ay + by;
+    c20x = b1x; c20y = b1y;
+
+    var c10x2 = c10x*c10x;
+    var c10x3 = c10x*c10x*c10x;
+    var c10y2 = c10y*c10y;
+    var c10y3 = c10y*c10y*c10y;
+    var c11x2 = c11x*c11x;
+    var c11x3 = c11x*c11x*c11x;
+    var c11y2 = c11y*c11y;
+    var c11y3 = c11y*c11y*c11y;
+    var c12x2 = c12x*c12x;
+    var c12x3 = c12x*c12x*c12x;
+    var c12y2 = c12y*c12y;
+    var c12y3 = c12y*c12y*c12y;
+    var c13x2 = c13x*c13x;
+    var c13x3 = c13x*c13x*c13x;
+    var c13y2 = c13y*c13y;
+    var c13y3 = c13y*c13y*c13y;
+    var c20x2 = c20x*c20x;
+    var c20x3 = c20x*c20x*c20x;
+    var c20y2 = c20y*c20y;
+    var c20y3 = c20y*c20y*c20y;
+    var c21x2 = c21x*c21x;
+    var c21x3 = c21x*c21x*c21x;
+    var c21y2 = c21y*c21y;
+    var c22x2 = c22x*c22x;
+    var c22x3 = c22x*c22x*c22x;
+    var c22y2 = c22y*c22y;
+    var c23x2 = c23x*c23x;
+    var c23x3 = c23x*c23x*c23x;
+    var c23y2 = c23y*c23y;
+    var c23y3 = c23y*c23y*c23y;
+    var poly = new Polynomial(
+        -c13x3*c23y3 + c13y3*c23x3 - 3*c13x*c13y2*c23x2*c23y +
+            3*c13x2*c13y*c23x*c23y2,
+        -6*c13x*c22x*c13y2*c23x*c23y + 6*c13x2*c13y*c22y*c23x*c23y + 3*c22x*c13y3*c23x2 -
+            3*c13x3*c22y*c23y2 - 3*c13x*c13y2*c22y*c23x2 + 3*c13x2*c22x*c13y*c23y2,
+        -6*c21x*c13x*c13y2*c23x*c23y - 6*c13x*c22x*c13y2*c22y*c23x + 6*c13x2*c22x*c13y*c22y*c23y +
+            3*c21x*c13y3*c23x2 + 3*c22x2*c13y3*c23x + 3*c21x*c13x2*c13y*c23y2 - 3*c13x*c21y*c13y2*c23x2 -
+            3*c13x*c22x2*c13y2*c23y + c13x2*c13y*c23x*(6*c21y*c23y + 3*c22y2) + c13x3*(-c21y*c23y2 -
+            2*c22y2*c23y - c23y*(2*c21y*c23y + c22y2)),
+        c11x*c12y*c13x*c13y*c23x*c23y - c11y*c12x*c13x*c13y*c23x*c23y + 6*c21x*c22x*c13y3*c23x +
+            3*c11x*c12x*c13x*c13y*c23y2 + 6*c10x*c13x*c13y2*c23x*c23y - 3*c11x*c12x*c13y2*c23x*c23y -
+            3*c11y*c12y*c13x*c13y*c23x2 - 6*c10y*c13x2*c13y*c23x*c23y - 6*c20x*c13x*c13y2*c23x*c23y +
+            3*c11y*c12y*c13x2*c23x*c23y - 2*c12x*c12y2*c13x*c23x*c23y - 6*c21x*c13x*c22x*c13y2*c23y -
+            6*c21x*c13x*c13y2*c22y*c23x - 6*c13x*c21y*c22x*c13y2*c23x + 6*c21x*c13x2*c13y*c22y*c23y +
+            2*c12x2*c12y*c13y*c23x*c23y + c22x3*c13y3 - 3*c10x*c13y3*c23x2 + 3*c10y*c13x3*c23y2 +
+            3*c20x*c13y3*c23x2 + c12y3*c13x*c23x2 - c12x3*c13y*c23y2 - 3*c10x*c13x2*c13y*c23y2 +
+            3*c10y*c13x*c13y2*c23x2 - 2*c11x*c12y*c13x2*c23y2 + c11x*c12y*c13y2*c23x2 - c11y*c12x*c13x2*c23y2 +
+            2*c11y*c12x*c13y2*c23x2 + 3*c20x*c13x2*c13y*c23y2 - c12x*c12y2*c13y*c23x2 -
+            3*c20y*c13x*c13y2*c23x2 + c12x2*c12y*c13x*c23y2 - 3*c13x*c22x2*c13y2*c22y +
+            c13x2*c13y*c23x*(6*c20y*c23y + 6*c21y*c22y) + c13x2*c22x*c13y*(6*c21y*c23y + 3*c22y2) +
+            c13x3*(-2*c21y*c22y*c23y - c20y*c23y2 - c22y*(2*c21y*c23y + c22y2) - c23y*(2*c20y*c23y + 2*c21y*c22y)),
+        6*c11x*c12x*c13x*c13y*c22y*c23y + c11x*c12y*c13x*c22x*c13y*c23y + c11x*c12y*c13x*c13y*c22y*c23x -
+            c11y*c12x*c13x*c22x*c13y*c23y - c11y*c12x*c13x*c13y*c22y*c23x - 6*c11y*c12y*c13x*c22x*c13y*c23x -
+            6*c10x*c22x*c13y3*c23x + 6*c20x*c22x*c13y3*c23x + 6*c10y*c13x3*c22y*c23y + 2*c12y3*c13x*c22x*c23x -
+            2*c12x3*c13y*c22y*c23y + 6*c10x*c13x*c22x*c13y2*c23y + 6*c10x*c13x*c13y2*c22y*c23x +
+            6*c10y*c13x*c22x*c13y2*c23x - 3*c11x*c12x*c22x*c13y2*c23y - 3*c11x*c12x*c13y2*c22y*c23x +
+            2*c11x*c12y*c22x*c13y2*c23x + 4*c11y*c12x*c22x*c13y2*c23x - 6*c10x*c13x2*c13y*c22y*c23y -
+            6*c10y*c13x2*c22x*c13y*c23y - 6*c10y*c13x2*c13y*c22y*c23x - 4*c11x*c12y*c13x2*c22y*c23y -
+            6*c20x*c13x*c22x*c13y2*c23y - 6*c20x*c13x*c13y2*c22y*c23x - 2*c11y*c12x*c13x2*c22y*c23y +
+            3*c11y*c12y*c13x2*c22x*c23y + 3*c11y*c12y*c13x2*c22y*c23x - 2*c12x*c12y2*c13x*c22x*c23y -
+            2*c12x*c12y2*c13x*c22y*c23x - 2*c12x*c12y2*c22x*c13y*c23x - 6*c20y*c13x*c22x*c13y2*c23x -
+            6*c21x*c13x*c21y*c13y2*c23x - 6*c21x*c13x*c22x*c13y2*c22y + 6*c20x*c13x2*c13y*c22y*c23y +
+            2*c12x2*c12y*c13x*c22y*c23y + 2*c12x2*c12y*c22x*c13y*c23y + 2*c12x2*c12y*c13y*c22y*c23x +
+            3*c21x*c22x2*c13y3 + 3*c21x2*c13y3*c23x - 3*c13x*c21y*c22x2*c13y2 - 3*c21x2*c13x*c13y2*c23y +
+            c13x2*c22x*c13y*(6*c20y*c23y + 6*c21y*c22y) + c13x2*c13y*c23x*(6*c20y*c22y + 3*c21y2) +
+            c21x*c13x2*c13y*(6*c21y*c23y + 3*c22y2) + c13x3*(-2*c20y*c22y*c23y - c23y*(2*c20y*c22y + c21y2) -
+            c21y*(2*c21y*c23y + c22y2) - c22y*(2*c20y*c23y + 2*c21y*c22y)),
+        c11x*c21x*c12y*c13x*c13y*c23y + c11x*c12y*c13x*c21y*c13y*c23x + c11x*c12y*c13x*c22x*c13y*c22y -
+            c11y*c12x*c21x*c13x*c13y*c23y - c11y*c12x*c13x*c21y*c13y*c23x - c11y*c12x*c13x*c22x*c13y*c22y -
+            6*c11y*c21x*c12y*c13x*c13y*c23x - 6*c10x*c21x*c13y3*c23x + 6*c20x*c21x*c13y3*c23x +
+            2*c21x*c12y3*c13x*c23x + 6*c10x*c21x*c13x*c13y2*c23y + 6*c10x*c13x*c21y*c13y2*c23x +
+            6*c10x*c13x*c22x*c13y2*c22y + 6*c10y*c21x*c13x*c13y2*c23x - 3*c11x*c12x*c21x*c13y2*c23y -
+            3*c11x*c12x*c21y*c13y2*c23x - 3*c11x*c12x*c22x*c13y2*c22y + 2*c11x*c21x*c12y*c13y2*c23x +
+            4*c11y*c12x*c21x*c13y2*c23x - 6*c10y*c21x*c13x2*c13y*c23y - 6*c10y*c13x2*c21y*c13y*c23x -
+            6*c10y*c13x2*c22x*c13y*c22y - 6*c20x*c21x*c13x*c13y2*c23y - 6*c20x*c13x*c21y*c13y2*c23x -
+            6*c20x*c13x*c22x*c13y2*c22y + 3*c11y*c21x*c12y*c13x2*c23y - 3*c11y*c12y*c13x*c22x2*c13y +
+            3*c11y*c12y*c13x2*c21y*c23x + 3*c11y*c12y*c13x2*c22x*c22y - 2*c12x*c21x*c12y2*c13x*c23y -
+            2*c12x*c21x*c12y2*c13y*c23x - 2*c12x*c12y2*c13x*c21y*c23x - 2*c12x*c12y2*c13x*c22x*c22y -
+            6*c20y*c21x*c13x*c13y2*c23x - 6*c21x*c13x*c21y*c22x*c13y2 + 6*c20y*c13x2*c21y*c13y*c23x +
+            2*c12x2*c21x*c12y*c13y*c23y + 2*c12x2*c12y*c21y*c13y*c23x + 2*c12x2*c12y*c22x*c13y*c22y -
+            3*c10x*c22x2*c13y3 + 3*c20x*c22x2*c13y3 + 3*c21x2*c22x*c13y3 + c12y3*c13x*c22x2 +
+            3*c10y*c13x*c22x2*c13y2 + c11x*c12y*c22x2*c13y2 + 2*c11y*c12x*c22x2*c13y2 -
+            c12x*c12y2*c22x2*c13y - 3*c20y*c13x*c22x2*c13y2 - 3*c21x2*c13x*c13y2*c22y +
+            c12x2*c12y*c13x*(2*c21y*c23y + c22y2) + c11x*c12x*c13x*c13y*(6*c21y*c23y + 3*c22y2) +
+            c21x*c13x2*c13y*(6*c20y*c23y + 6*c21y*c22y) + c12x3*c13y*(-2*c21y*c23y - c22y2) +
+            c10y*c13x3*(6*c21y*c23y + 3*c22y2) + c11y*c12x*c13x2*(-2*c21y*c23y - c22y2) +
+            c11x*c12y*c13x2*(-4*c21y*c23y - 2*c22y2) + c10x*c13x2*c13y*(-6*c21y*c23y - 3*c22y2) +
+            c13x2*c22x*c13y*(6*c20y*c22y + 3*c21y2) + c20x*c13x2*c13y*(6*c21y*c23y + 3*c22y2) +
+            c13x3*(-2*c20y*c21y*c23y - c22y*(2*c20y*c22y + c21y2) - c20y*(2*c21y*c23y + c22y2) -
+            c21y*(2*c20y*c23y + 2*c21y*c22y)),
+        -c10x*c11x*c12y*c13x*c13y*c23y + c10x*c11y*c12x*c13x*c13y*c23y + 6*c10x*c11y*c12y*c13x*c13y*c23x -
+            6*c10y*c11x*c12x*c13x*c13y*c23y - c10y*c11x*c12y*c13x*c13y*c23x + c10y*c11y*c12x*c13x*c13y*c23x +
+            c11x*c11y*c12x*c12y*c13x*c23y - c11x*c11y*c12x*c12y*c13y*c23x + c11x*c20x*c12y*c13x*c13y*c23y +
+            c11x*c20y*c12y*c13x*c13y*c23x + c11x*c21x*c12y*c13x*c13y*c22y + c11x*c12y*c13x*c21y*c22x*c13y -
+            c20x*c11y*c12x*c13x*c13y*c23y - 6*c20x*c11y*c12y*c13x*c13y*c23x - c11y*c12x*c20y*c13x*c13y*c23x -
+            c11y*c12x*c21x*c13x*c13y*c22y - c11y*c12x*c13x*c21y*c22x*c13y - 6*c11y*c21x*c12y*c13x*c22x*c13y -
+            6*c10x*c20x*c13y3*c23x - 6*c10x*c21x*c22x*c13y3 - 2*c10x*c12y3*c13x*c23x + 6*c20x*c21x*c22x*c13y3 +
+            2*c20x*c12y3*c13x*c23x + 2*c21x*c12y3*c13x*c22x + 2*c10y*c12x3*c13y*c23y - 6*c10x*c10y*c13x*c13y2*c23x +
+            3*c10x*c11x*c12x*c13y2*c23y - 2*c10x*c11x*c12y*c13y2*c23x - 4*c10x*c11y*c12x*c13y2*c23x +
+            3*c10y*c11x*c12x*c13y2*c23x + 6*c10x*c10y*c13x2*c13y*c23y + 6*c10x*c20x*c13x*c13y2*c23y -
+            3*c10x*c11y*c12y*c13x2*c23y + 2*c10x*c12x*c12y2*c13x*c23y + 2*c10x*c12x*c12y2*c13y*c23x +
+            6*c10x*c20y*c13x*c13y2*c23x + 6*c10x*c21x*c13x*c13y2*c22y + 6*c10x*c13x*c21y*c22x*c13y2 +
+            4*c10y*c11x*c12y*c13x2*c23y + 6*c10y*c20x*c13x*c13y2*c23x + 2*c10y*c11y*c12x*c13x2*c23y -
+            3*c10y*c11y*c12y*c13x2*c23x + 2*c10y*c12x*c12y2*c13x*c23x + 6*c10y*c21x*c13x*c22x*c13y2 -
+            3*c11x*c20x*c12x*c13y2*c23y + 2*c11x*c20x*c12y*c13y2*c23x + c11x*c11y*c12y2*c13x*c23x -
+            3*c11x*c12x*c20y*c13y2*c23x - 3*c11x*c12x*c21x*c13y2*c22y - 3*c11x*c12x*c21y*c22x*c13y2 +
+            2*c11x*c21x*c12y*c22x*c13y2 + 4*c20x*c11y*c12x*c13y2*c23x + 4*c11y*c12x*c21x*c22x*c13y2 -
+            2*c10x*c12x2*c12y*c13y*c23y - 6*c10y*c20x*c13x2*c13y*c23y - 6*c10y*c20y*c13x2*c13y*c23x -
+            6*c10y*c21x*c13x2*c13y*c22y - 2*c10y*c12x2*c12y*c13x*c23y - 2*c10y*c12x2*c12y*c13y*c23x -
+            6*c10y*c13x2*c21y*c22x*c13y - c11x*c11y*c12x2*c13y*c23y - 2*c11x*c11y2*c13x*c13y*c23x +
+            3*c20x*c11y*c12y*c13x2*c23y - 2*c20x*c12x*c12y2*c13x*c23y - 2*c20x*c12x*c12y2*c13y*c23x -
+            6*c20x*c20y*c13x*c13y2*c23x - 6*c20x*c21x*c13x*c13y2*c22y - 6*c20x*c13x*c21y*c22x*c13y2 +
+            3*c11y*c20y*c12y*c13x2*c23x + 3*c11y*c21x*c12y*c13x2*c22y + 3*c11y*c12y*c13x2*c21y*c22x -
+            2*c12x*c20y*c12y2*c13x*c23x - 2*c12x*c21x*c12y2*c13x*c22y - 2*c12x*c21x*c12y2*c22x*c13y -
+            2*c12x*c12y2*c13x*c21y*c22x - 6*c20y*c21x*c13x*c22x*c13y2 - c11y2*c12x*c12y*c13x*c23x +
+            2*c20x*c12x2*c12y*c13y*c23y + 6*c20y*c13x2*c21y*c22x*c13y + 2*c11x2*c11y*c13x*c13y*c23y +
+            c11x2*c12x*c12y*c13y*c23y + 2*c12x2*c20y*c12y*c13y*c23x + 2*c12x2*c21x*c12y*c13y*c22y +
+            2*c12x2*c12y*c21y*c22x*c13y + c21x3*c13y3 + 3*c10x2*c13y3*c23x - 3*c10y2*c13x3*c23y +
+            3*c20x2*c13y3*c23x + c11y3*c13x2*c23x - c11x3*c13y2*c23y - c11x*c11y2*c13x2*c23y +
+            c11x2*c11y*c13y2*c23x - 3*c10x2*c13x*c13y2*c23y + 3*c10y2*c13x2*c13y*c23x - c11x2*c12y2*c13x*c23y +
+            c11y2*c12x2*c13y*c23x - 3*c21x2*c13x*c21y*c13y2 - 3*c20x2*c13x*c13y2*c23y + 3*c20y2*c13x2*c13y*c23x +
+            c11x*c12x*c13x*c13y*(6*c20y*c23y + 6*c21y*c22y) + c12x3*c13y*(-2*c20y*c23y - 2*c21y*c22y) +
+            c10y*c13x3*(6*c20y*c23y + 6*c21y*c22y) + c11y*c12x*c13x2*(-2*c20y*c23y - 2*c21y*c22y) +
+            c12x2*c12y*c13x*(2*c20y*c23y + 2*c21y*c22y) + c11x*c12y*c13x2*(-4*c20y*c23y - 4*c21y*c22y) +
+            c10x*c13x2*c13y*(-6*c20y*c23y - 6*c21y*c22y) + c20x*c13x2*c13y*(6*c20y*c23y + 6*c21y*c22y) +
+            c21x*c13x2*c13y*(6*c20y*c22y + 3*c21y2) + c13x3*(-2*c20y*c21y*c22y - c20y2*c23y -
+            c21y*(2*c20y*c22y + c21y2) - c20y*(2*c20y*c23y + 2*c21y*c22y)),
+        -c10x*c11x*c12y*c13x*c13y*c22y + c10x*c11y*c12x*c13x*c13y*c22y + 6*c10x*c11y*c12y*c13x*c22x*c13y -
+            6*c10y*c11x*c12x*c13x*c13y*c22y - c10y*c11x*c12y*c13x*c22x*c13y + c10y*c11y*c12x*c13x*c22x*c13y +
+            c11x*c11y*c12x*c12y*c13x*c22y - c11x*c11y*c12x*c12y*c22x*c13y + c11x*c20x*c12y*c13x*c13y*c22y +
+            c11x*c20y*c12y*c13x*c22x*c13y + c11x*c21x*c12y*c13x*c21y*c13y - c20x*c11y*c12x*c13x*c13y*c22y -
+            6*c20x*c11y*c12y*c13x*c22x*c13y - c11y*c12x*c20y*c13x*c22x*c13y - c11y*c12x*c21x*c13x*c21y*c13y -
+            6*c10x*c20x*c22x*c13y3 - 2*c10x*c12y3*c13x*c22x + 2*c20x*c12y3*c13x*c22x + 2*c10y*c12x3*c13y*c22y -
+            6*c10x*c10y*c13x*c22x*c13y2 + 3*c10x*c11x*c12x*c13y2*c22y - 2*c10x*c11x*c12y*c22x*c13y2 -
+            4*c10x*c11y*c12x*c22x*c13y2 + 3*c10y*c11x*c12x*c22x*c13y2 + 6*c10x*c10y*c13x2*c13y*c22y +
+            6*c10x*c20x*c13x*c13y2*c22y - 3*c10x*c11y*c12y*c13x2*c22y + 2*c10x*c12x*c12y2*c13x*c22y +
+            2*c10x*c12x*c12y2*c22x*c13y + 6*c10x*c20y*c13x*c22x*c13y2 + 6*c10x*c21x*c13x*c21y*c13y2 +
+            4*c10y*c11x*c12y*c13x2*c22y + 6*c10y*c20x*c13x*c22x*c13y2 + 2*c10y*c11y*c12x*c13x2*c22y -
+            3*c10y*c11y*c12y*c13x2*c22x + 2*c10y*c12x*c12y2*c13x*c22x - 3*c11x*c20x*c12x*c13y2*c22y +
+            2*c11x*c20x*c12y*c22x*c13y2 + c11x*c11y*c12y2*c13x*c22x - 3*c11x*c12x*c20y*c22x*c13y2 -
+            3*c11x*c12x*c21x*c21y*c13y2 + 4*c20x*c11y*c12x*c22x*c13y2 - 2*c10x*c12x2*c12y*c13y*c22y -
+            6*c10y*c20x*c13x2*c13y*c22y - 6*c10y*c20y*c13x2*c22x*c13y - 6*c10y*c21x*c13x2*c21y*c13y -
+            2*c10y*c12x2*c12y*c13x*c22y - 2*c10y*c12x2*c12y*c22x*c13y - c11x*c11y*c12x2*c13y*c22y -
+            2*c11x*c11y2*c13x*c22x*c13y + 3*c20x*c11y*c12y*c13x2*c22y - 2*c20x*c12x*c12y2*c13x*c22y -
+            2*c20x*c12x*c12y2*c22x*c13y - 6*c20x*c20y*c13x*c22x*c13y2 - 6*c20x*c21x*c13x*c21y*c13y2 +
+            3*c11y*c20y*c12y*c13x2*c22x + 3*c11y*c21x*c12y*c13x2*c21y - 2*c12x*c20y*c12y2*c13x*c22x -
+            2*c12x*c21x*c12y2*c13x*c21y - c11y2*c12x*c12y*c13x*c22x + 2*c20x*c12x2*c12y*c13y*c22y -
+            3*c11y*c21x2*c12y*c13x*c13y + 6*c20y*c21x*c13x2*c21y*c13y + 2*c11x2*c11y*c13x*c13y*c22y +
+            c11x2*c12x*c12y*c13y*c22y + 2*c12x2*c20y*c12y*c22x*c13y + 2*c12x2*c21x*c12y*c21y*c13y -
+            3*c10x*c21x2*c13y3 + 3*c20x*c21x2*c13y3 + 3*c10x2*c22x*c13y3 - 3*c10y2*c13x3*c22y + 3*c20x2*c22x*c13y3 +
+            c21x2*c12y3*c13x + c11y3*c13x2*c22x - c11x3*c13y2*c22y + 3*c10y*c21x2*c13x*c13y2 -
+            c11x*c11y2*c13x2*c22y + c11x*c21x2*c12y*c13y2 + 2*c11y*c12x*c21x2*c13y2 + c11x2*c11y*c22x*c13y2 -
+            c12x*c21x2*c12y2*c13y - 3*c20y*c21x2*c13x*c13y2 - 3*c10x2*c13x*c13y2*c22y + 3*c10y2*c13x2*c22x*c13y -
+            c11x2*c12y2*c13x*c22y + c11y2*c12x2*c22x*c13y - 3*c20x2*c13x*c13y2*c22y + 3*c20y2*c13x2*c22x*c13y +
+            c12x2*c12y*c13x*(2*c20y*c22y + c21y2) + c11x*c12x*c13x*c13y*(6*c20y*c22y + 3*c21y2) +
+            c12x3*c13y*(-2*c20y*c22y - c21y2) + c10y*c13x3*(6*c20y*c22y + 3*c21y2) +
+            c11y*c12x*c13x2*(-2*c20y*c22y - c21y2) + c11x*c12y*c13x2*(-4*c20y*c22y - 2*c21y2) +
+            c10x*c13x2*c13y*(-6*c20y*c22y - 3*c21y2) + c20x*c13x2*c13y*(6*c20y*c22y + 3*c21y2) +
+            c13x3*(-2*c20y*c21y2 - c20y2*c22y - c20y*(2*c20y*c22y + c21y2)),
+        -c10x*c11x*c12y*c13x*c21y*c13y + c10x*c11y*c12x*c13x*c21y*c13y + 6*c10x*c11y*c21x*c12y*c13x*c13y -
+            6*c10y*c11x*c12x*c13x*c21y*c13y - c10y*c11x*c21x*c12y*c13x*c13y + c10y*c11y*c12x*c21x*c13x*c13y -
+            c11x*c11y*c12x*c21x*c12y*c13y + c11x*c11y*c12x*c12y*c13x*c21y + c11x*c20x*c12y*c13x*c21y*c13y +
+            6*c11x*c12x*c20y*c13x*c21y*c13y + c11x*c20y*c21x*c12y*c13x*c13y - c20x*c11y*c12x*c13x*c21y*c13y -
+            6*c20x*c11y*c21x*c12y*c13x*c13y - c11y*c12x*c20y*c21x*c13x*c13y - 6*c10x*c20x*c21x*c13y3 -
+            2*c10x*c21x*c12y3*c13x + 6*c10y*c20y*c13x3*c21y + 2*c20x*c21x*c12y3*c13x + 2*c10y*c12x3*c21y*c13y -
+            2*c12x3*c20y*c21y*c13y - 6*c10x*c10y*c21x*c13x*c13y2 + 3*c10x*c11x*c12x*c21y*c13y2 -
+            2*c10x*c11x*c21x*c12y*c13y2 - 4*c10x*c11y*c12x*c21x*c13y2 + 3*c10y*c11x*c12x*c21x*c13y2 +
+            6*c10x*c10y*c13x2*c21y*c13y + 6*c10x*c20x*c13x*c21y*c13y2 - 3*c10x*c11y*c12y*c13x2*c21y +
+            2*c10x*c12x*c21x*c12y2*c13y + 2*c10x*c12x*c12y2*c13x*c21y + 6*c10x*c20y*c21x*c13x*c13y2 +
+            4*c10y*c11x*c12y*c13x2*c21y + 6*c10y*c20x*c21x*c13x*c13y2 + 2*c10y*c11y*c12x*c13x2*c21y -
+            3*c10y*c11y*c21x*c12y*c13x2 + 2*c10y*c12x*c21x*c12y2*c13x - 3*c11x*c20x*c12x*c21y*c13y2 +
+            2*c11x*c20x*c21x*c12y*c13y2 + c11x*c11y*c21x*c12y2*c13x - 3*c11x*c12x*c20y*c21x*c13y2 +
+            4*c20x*c11y*c12x*c21x*c13y2 - 6*c10x*c20y*c13x2*c21y*c13y - 2*c10x*c12x2*c12y*c21y*c13y -
+            6*c10y*c20x*c13x2*c21y*c13y - 6*c10y*c20y*c21x*c13x2*c13y - 2*c10y*c12x2*c21x*c12y*c13y -
+            2*c10y*c12x2*c12y*c13x*c21y - c11x*c11y*c12x2*c21y*c13y - 4*c11x*c20y*c12y*c13x2*c21y -
+            2*c11x*c11y2*c21x*c13x*c13y + 3*c20x*c11y*c12y*c13x2*c21y - 2*c20x*c12x*c21x*c12y2*c13y -
+            2*c20x*c12x*c12y2*c13x*c21y - 6*c20x*c20y*c21x*c13x*c13y2 - 2*c11y*c12x*c20y*c13x2*c21y +
+            3*c11y*c20y*c21x*c12y*c13x2 - 2*c12x*c20y*c21x*c12y2*c13x - c11y2*c12x*c21x*c12y*c13x +
+            6*c20x*c20y*c13x2*c21y*c13y + 2*c20x*c12x2*c12y*c21y*c13y + 2*c11x2*c11y*c13x*c21y*c13y +
+            c11x2*c12x*c12y*c21y*c13y + 2*c12x2*c20y*c21x*c12y*c13y + 2*c12x2*c20y*c12y*c13x*c21y +
+            3*c10x2*c21x*c13y3 - 3*c10y2*c13x3*c21y + 3*c20x2*c21x*c13y3 + c11y3*c21x*c13x2 - c11x3*c21y*c13y2 -
+            3*c20y2*c13x3*c21y - c11x*c11y2*c13x2*c21y + c11x2*c11y*c21x*c13y2 - 3*c10x2*c13x*c21y*c13y2 +
+            3*c10y2*c21x*c13x2*c13y - c11x2*c12y2*c13x*c21y + c11y2*c12x2*c21x*c13y - 3*c20x2*c13x*c21y*c13y2 +
+            3*c20y2*c21x*c13x2*c13y,
+        c10x*c10y*c11x*c12y*c13x*c13y - c10x*c10y*c11y*c12x*c13x*c13y + c10x*c11x*c11y*c12x*c12y*c13y -
+            c10y*c11x*c11y*c12x*c12y*c13x - c10x*c11x*c20y*c12y*c13x*c13y + 6*c10x*c20x*c11y*c12y*c13x*c13y +
+            c10x*c11y*c12x*c20y*c13x*c13y - c10y*c11x*c20x*c12y*c13x*c13y - 6*c10y*c11x*c12x*c20y*c13x*c13y +
+            c10y*c20x*c11y*c12x*c13x*c13y - c11x*c20x*c11y*c12x*c12y*c13y + c11x*c11y*c12x*c20y*c12y*c13x +
+            c11x*c20x*c20y*c12y*c13x*c13y - c20x*c11y*c12x*c20y*c13x*c13y - 2*c10x*c20x*c12y3*c13x +
+            2*c10y*c12x3*c20y*c13y - 3*c10x*c10y*c11x*c12x*c13y2 - 6*c10x*c10y*c20x*c13x*c13y2 +
+            3*c10x*c10y*c11y*c12y*c13x2 - 2*c10x*c10y*c12x*c12y2*c13x - 2*c10x*c11x*c20x*c12y*c13y2 -
+            c10x*c11x*c11y*c12y2*c13x + 3*c10x*c11x*c12x*c20y*c13y2 - 4*c10x*c20x*c11y*c12x*c13y2 +
+            3*c10y*c11x*c20x*c12x*c13y2 + 6*c10x*c10y*c20y*c13x2*c13y + 2*c10x*c10y*c12x2*c12y*c13y +
+            2*c10x*c11x*c11y2*c13x*c13y + 2*c10x*c20x*c12x*c12y2*c13y + 6*c10x*c20x*c20y*c13x*c13y2 -
+            3*c10x*c11y*c20y*c12y*c13x2 + 2*c10x*c12x*c20y*c12y2*c13x + c10x*c11y2*c12x*c12y*c13x +
+            c10y*c11x*c11y*c12x2*c13y + 4*c10y*c11x*c20y*c12y*c13x2 - 3*c10y*c20x*c11y*c12y*c13x2 +
+            2*c10y*c20x*c12x*c12y2*c13x + 2*c10y*c11y*c12x*c20y*c13x2 + c11x*c20x*c11y*c12y2*c13x -
+            3*c11x*c20x*c12x*c20y*c13y2 - 2*c10x*c12x2*c20y*c12y*c13y - 6*c10y*c20x*c20y*c13x2*c13y -
+            2*c10y*c20x*c12x2*c12y*c13y - 2*c10y*c11x2*c11y*c13x*c13y - c10y*c11x2*c12x*c12y*c13y -
+            2*c10y*c12x2*c20y*c12y*c13x - 2*c11x*c20x*c11y2*c13x*c13y - c11x*c11y*c12x2*c20y*c13y +
+            3*c20x*c11y*c20y*c12y*c13x2 - 2*c20x*c12x*c20y*c12y2*c13x - c20x*c11y2*c12x*c12y*c13x +
+            3*c10y2*c11x*c12x*c13x*c13y + 3*c11x*c12x*c20y2*c13x*c13y + 2*c20x*c12x2*c20y*c12y*c13y -
+            3*c10x2*c11y*c12y*c13x*c13y + 2*c11x2*c11y*c20y*c13x*c13y + c11x2*c12x*c20y*c12y*c13y -
+            3*c20x2*c11y*c12y*c13x*c13y - c10x3*c13y3 + c10y3*c13x3 + c20x3*c13y3 - c20y3*c13x3 -
+            3*c10x*c20x2*c13y3 - c10x*c11y3*c13x2 + 3*c10x2*c20x*c13y3 + c10y*c11x3*c13y2 +
+            3*c10y*c20y2*c13x3 + c20x*c11y3*c13x2 + c10x2*c12y3*c13x - 3*c10y2*c20y*c13x3 - c10y2*c12x3*c13y +
+            c20x2*c12y3*c13x - c11x3*c20y*c13y2 - c12x3*c20y2*c13y - c10x*c11x2*c11y*c13y2 +
+            c10y*c11x*c11y2*c13x2 - 3*c10x*c10y2*c13x2*c13y - c10x*c11y2*c12x2*c13y + c10y*c11x2*c12y2*c13x -
+            c11x*c11y2*c20y*c13x2 + 3*c10x2*c10y*c13x*c13y2 + c10x2*c11x*c12y*c13y2 +
+            2*c10x2*c11y*c12x*c13y2 - 2*c10y2*c11x*c12y*c13x2 - c10y2*c11y*c12x*c13x2 + c11x2*c20x*c11y*c13y2 -
+            3*c10x*c20y2*c13x2*c13y + 3*c10y*c20x2*c13x*c13y2 + c11x*c20x2*c12y*c13y2 - 2*c11x*c20y2*c12y*c13x2 +
+            c20x*c11y2*c12x2*c13y - c11y*c12x*c20y2*c13x2 - c10x2*c12x*c12y2*c13y - 3*c10x2*c20y*c13x*c13y2 +
+            3*c10y2*c20x*c13x2*c13y + c10y2*c12x2*c12y*c13x - c11x2*c20y*c12y2*c13x + 2*c20x2*c11y*c12x*c13y2 +
+            3*c20x*c20y2*c13x2*c13y - c20x2*c12x*c12y2*c13y - 3*c20x2*c20y*c13x*c13y2 + c12x2*c20y2*c12y*c13x
+    );
+
+    var roots = poly.getRootsInInterval(0,1);
+    for ( var i = 0; i < roots.length; i++ ) {
+        var s = roots[i];
+        var xRoots = new Polynomial(
+            c13x,
+            c12x,
+            c11x,
+            c10x - c20x - s*c21x - s*s*c22x - s*s*s*c23x
+        ).getRoots();
+        var yRoots = new Polynomial(
+            c13y,
+            c12y,
+            c11y,
+            c10y - c20y - s*c21y - s*s*c22y - s*s*s*c23y
+        ).getRoots();
+
+        if ( xRoots.length > 0 && yRoots.length > 0 ) {
+            var TOLERANCE = 1e-4;
+
+            checkRoots:
+            for ( var j = 0; j < xRoots.length; j++ ) {
+                var xRoot = xRoots[j];
+
+                if ( 0 <= xRoot && xRoot <= 1 ) {
+                    for ( var k = 0; k < yRoots.length; k++ ) {
+                        if ( Math.abs( xRoot - yRoots[k] ) < TOLERANCE ) {
+                            var point = new Point(
+                                c23x*(s*s*s)+(c22x*(s*s)+(c21x*(s)+(c20x))),
+                                c23y*(s*s*s)+(c22y*(s*s)+(c21y*(s)+(c20y)))
+                            );
+                            locations.push( new CurveLocation( curve1, null, point, curve2 ) );
+                            break checkRoots;
+                        }
+                    }
+                }
+            }
+        }
+    }
+};
+
+
+function findRoots( _p ){
+    var n = _p.length-1, i, j;
+    var z = 1, fz, dz;
+    var roots = [], p = [], dp = [];
+    var rootCount = 0, lastSign ,sign, pi, pj;
+    lastSign = _p[0] > 0;
+    // dp is the derivative of polynomial p w.r.t t
+    for (i = 0, j = n; i <= n ; i++, j--){
+        pi = _p[i];
+        pj = _p[j];
+        sign = pj > 0;
+        if( i && pj && lastSign !== sign ){
+            ++rootCount;
+        }
+        if( pj ) lastSign = sign;
+        p.push( pi );
+        dp.push( i * pi );
+    }
+    // According to Descartes' rule of signs, the number of real positive roots
+    // is equal to or less than the change in signs of consecutive non-zero coeff.
+    if( !rootCount )
+        return roots;
+    dp.shift();
+    while( n-- ){
+        for (i = 0; i <= MAX_ITERATE; i++) {
+            fz = evaluateHorner( p, z );
+            dfz = evaluateHorner( dp, z );
+            dz = fz / dfz;
+            // Check if we are done
+            if (Math.abs(dz) < EPSILON){
+                if( z >= 0 && z <= 1  ){
+                    roots.push( z );
+                }
+                break;
+            }
+            // find the next approximation
+            z = z - dz;
+        }
+        // z += EPSILON;
+        // DEBUG: Should we exit if the root fails to converge?
+        if( i > MAX_ITERATE ) break;
+        // Divide p itself instead of creating a new array every time. Much faster this way!
+        polyLongDivideSelf( p, z );
+        dp.pop();
+        for (i = 1; i <= n; i++)
+            dp[i-1] = i * p[i];
+    }
+    return roots;
+}
 
 // TODO: Find a home for this one
 /**
@@ -599,9 +947,9 @@ function getIntersections3( path1, path2 ){
         var curve1 = curves1[i],
             values1 = curve1.getValues();
         var v1Linear = Curve.isLinear(values1);
-        if(!v1Linear){
-            implic = bernsteinToImplicit( values1 );
-        }
+        // if(!v1Linear){
+        //     implic = bernsteinToImplicit( values1 );
+        // }
         for (var j = 0; j < length2; j++){
             value2 = values2[j];
             var v2Linear = Curve.isLinear(value2);
@@ -610,13 +958,21 @@ function getIntersections3( path1, path2 ){
             } else if ( v1Linear || v2Linear ){
                 _getCurveLineIntersection(values1, value2, curve1, curves2[j], locations);
             } else {
-                ix = getIntersectEquation( implic, value2 );
-                roots = findRoots( ix );
-                len = roots.length;
-                // The roots are based on curve2, since we used curve1's implicit form
-                while( len-- ){
-                    locations.push( new CurveLocation( curve1, null, curve1.getPointAt(roots[len]), curve2 ) );
-                }
+                intersectCurveCurve(values1, value2, curve1, curves2[j], locations);
+                // ix = getIntersectEquation( implic, value2 );
+                // roots = findRoots( ix );
+                // // str = "";
+                // // len = 9;
+                // // while( len-- )
+                // //     str += "+ t^"+(len+1)+" "+ix[len]+" ";
+                // len = roots.length;
+                // // The roots are based on curve2, since we used curve1's implicit form
+                // while( len-- ){
+                //     var loc = new CurveLocation( curve1, null, curves2[j].getPointAt(roots[len], true), curves2[j] );
+                //     if( loc.getParameter() )
+                //         locations.push( loc );
+                // }
+                // console.log(str)
             }
         }
     }
