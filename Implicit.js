@@ -520,9 +520,13 @@ function getIntersectEquation( im, v ){
 
 
 /**
- * Use a combination of Newton_Raphson and Horners scheme to successively
- * find roots for a polynomial.
+ * Horner's scheme using Newton_Raphson to successively
+ * find all roots for a n degree polynomial.
  *     http://en.wikipedia.org/wiki/Horner%27s_method#Polynomial_root_finding
+ *
+ * Newton-Raphson part of this implementation is adapted from
+ * paperjs #Numerical.findRoot method
+ *
  * @param  {Array} p - Coefficients of polynomial
  * @return {Array}   - Roots in range [0..1]
  */
@@ -543,14 +547,14 @@ function findRoots( _p ){
             dz = fz / evaluateHorner( dp, z );
             // Check if we are done
             if (Math.abs(dz) < EPSILON){
-                if( z >= 0 && z <= 1 )
+                if( z >= 0 && z <= 1 && evaluateHorner(_p, z) < TOLERANCE ){
                     roots.push( z );
+                }
                 break;
             }
             // find the next approximation
             z = z - dz;
         }
-        // p = polyLongDivide( p, z );
         // Divide p itself instead of creating a new array every time. Much faster this way!
         polyLongDivideSelf( p, z );
         dp.pop();
