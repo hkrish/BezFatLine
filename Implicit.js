@@ -71,7 +71,7 @@ function bernsteinToBasis( vb ){
 // [SP86] - Thomas W. Sederberg and Scott R. Parry.
 //      A comparison of curve-curve intersection algorithms.
 //      Computer-Aided Design, 18:58–63, 1986.
-function bernseinToImplicit( v ){
+function bernsteinToImplicit( v ){
     var x1 = v[0], y1 = v[1], x2 = v[2], y2 = v[3];
     var x3 = v[4], y3 = v[5], x4 = v[6], y4 = v[7];
     // Squares and cubes of coefficients
@@ -285,7 +285,7 @@ function getIntersectEquation( im, v ){
      *     y = (1-t)^3 y1 + 3 (1-t)^2 t y2 + 3 (1-t) t^2 y3 + t^3 y4
      *
      * Substituting for x and y in the implicit equation f(x, y), we would
-     * get a 9 degree polynomial, roots can be calculated by evaluating
+     * get a 9 degree polynomial, roots can be calculated by solving
      * this polynomial for real roots in t = [0..1]
      *
      * t0 is the coefficient for term t^0, t1 - t^1 .. t9 - t^9
@@ -534,13 +534,25 @@ function findRoots( _p ){
     var n = _p.length-1, i, j;
     var z = 1, fz, dz;
     var roots = [], p = [], dp = [];
-    // dp -> d( p )/dt
-    for (i = 0; i <= n; i++){
-        p.push( _p[i] );
-        dp.push( i * p[i] );
+    var rootCount = 0, lastSign ,sign, pi, pj;
+    lastSign = _p[0] > 0;
+    // dp is the derivative of polynomial p w.r.t t
+    for (i = 0, j = n; i <= n ; i++, j--){
+        pi = _p[i];
+        pj = _p[j];
+        sign = pj > 0;
+        if( i && pj && lastSign !== sign ){
+            ++rootCount;
+        }
+        if( pj ) lastSign = sign;
+        p.push( pi );
+        dp.push( i * pi );
     }
+    // According to Descartes' rule of signs, the number of real positive roots
+    // is equal to or less than the change in signs of consecutive non-zero coeff.
+    if( !rootCount )
+        return roots;
     dp.shift();
-    i = 0;
     while( n-- ){
         for (i = 0; i <= MAX_ITERATE; i++) {
             fz = evaluateHorner( p, z );
@@ -555,6 +567,8 @@ function findRoots( _p ){
             // find the next approximation
             z = z - dz;
         }
+        // DEBUG: Should we exit if the root fails to converge?
+        if( i > MAX_ITERATE ) break;
         // Divide p itself instead of creating a new array every time. Much faster this way!
         polyLongDivideSelf( p, z );
         dp.pop();
@@ -563,3 +577,49 @@ function findRoots( _p ){
     }
     return roots;
 }
+
+
+// TODO: Find a home for this one
+/**
+ * This method is analogous to paperjs#PathItem.getIntersections
+ */
+function getIntersections3( path1, path2 ){
+    // First check the bounds of the two paths. If they don't intersect,
+    // we don't need to iterate through their curves.
+    if (!path1.getBounds().touches(path2.getBounds()))
+        return [];
+    var locations = [],
+        curves1 = path1.getCurves(),
+        curves2 = path2.getCurves(),
+        length2 = curves2.length,
+        values2 = [], ix, roots, len, implic;
+    for (var i = 0; i < length2; i++)
+        values2[i] = curves2[i].getValues();
+    for (var i = 0, l = curves1.length; i < l; i++) {
+        var curve1 = curves1[i],
+            values1 = curve1.getValues();
+        var v1Linear = Curve.isLinear(values1);
+        if(!v1Linear){
+            implic = bernsteinToImplicit( values1 );
+        }
+        for (var j = 0; j < length2; j++){
+            value2 = values2[j];
+            var v2Linear = Curve.isLinear(value2);
+            if( v1Linear && v2Linear ){
+                _getLineLineIntersection(values1, value2, curve1, curves2[j], locations);
+            } else if ( v1Linear || v2Linear ){
+                _getCurveLineIntersection(values1, value2, curve1, curves2[j], locations);
+            } else {
+                ix = getIntersectEquation( implic, value2 );
+                roots = findRoots( ix );
+                len = roots.length;
+                // The roots are based on curve2, since we used curve1's implicit form
+                while( len-- ){
+                    locations.push( new CurveLocation( curve1, null, curve1.getPointAt(roots[len]), curve2 ) );
+                }
+            }
+        }
+    }
+    return locations;
+}
+
